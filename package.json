@@ -1,0 +1,9 @@
+{
+  "name": "tracker-stripper",
+  "private": true,
+  "description": "Chrome extension that strips tracking parameters from links.",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "build": "sh scripts/build.sh"
+  }
+}

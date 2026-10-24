@@ -1,0 +1,81 @@
+name: Build and release
+
+# Every push and pull request runs the tests and builds the zip.
+# On main, if manifest.json has a version that hasn't been released yet,
+# a GitHub Release "v<version>" is created with the zip attached.
+# To ship a new release: bump "version" in manifest.json and merge to main.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.build.outputs.version }}
+      zip: ${{ steps.build.outputs.zip }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run tests
+        run: npm test
+
+      - name: Check manifest
+        run: |
+          node -e '
+            const m = require("./manifest.json");
+            if (m.manifest_version !== 3) throw new Error("manifest_version must be 3");
+            if (!/^\d+(\.\d+){0,3}$/.test(m.version)) throw new Error("Invalid version: " + m.version);
+            console.log("manifest ok, version", m.version);
+          '
+
+      - name: Build zip
+        id: build
+        run: |
+          ZIP=$(sh scripts/build.sh)
+          echo "zip=$ZIP" >> "$GITHUB_OUTPUT"
+          echo "version=$(node -p "require('./manifest.json').version")" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tracker-stripper-${{ steps.build.outputs.version }}
+          path: dist/*.zip
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: tracker-stripper-${{ needs.build.outputs.version }}
+          path: dist
+
+      - name: Create release if this version is new
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          TAG="v$VERSION"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "Release $TAG already exists. Bump the version in manifest.json to publish a new one."
+            exit 0
+          fi
+          gh release create "$TAG" dist/*.zip \
+            --target "$GITHUB_SHA" \
+            --title "Tracker Stripper $VERSION" \
+            --generate-notes
