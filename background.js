@@ -55,18 +55,29 @@ async function copyClean(url, tabId) {
 
 // ---------- Context menu ----------
 
-async function applyContextMenu(settings) {
-  await chrome.contextMenus.removeAll();
-  if (!settings.contextMenu) return;
-  chrome.contextMenus.create({ id: MENU_LINK, title: 'Copy clean link', contexts: ['link'] });
-  chrome.contextMenus.create({ id: MENU_PAGE, title: 'Copy clean page link', contexts: ['page', 'frame'] });
+let menuUpdate = Promise.resolve();
+
+// Serialized so overlapping calls (install + a settings change) can't
+// interleave removeAll/create and end up with duplicate or missing items.
+function applyContextMenu(settings) {
+  menuUpdate = menuUpdate.catch(() => {}).then(async () => {
+    await chrome.contextMenus.removeAll();
+    if (!settings.contextMenu) return;
+    chrome.contextMenus.create({ id: MENU_LINK, title: 'Copy clean link', contexts: ['link'] });
+    chrome.contextMenus.create({ id: MENU_PAGE, title: 'Copy clean page link', contexts: ['page', 'frame'] });
+  });
+  return menuUpdate;
 }
 
-chrome.contextMenus.onClicked.addListener((info, tab) => {
+function handleMenuClick(info, tab) {
   const tabId = tab && tab.id;
   if (info.menuItemId === MENU_LINK && info.linkUrl) copyClean(info.linkUrl, tabId);
-  if (info.menuItemId === MENU_PAGE) copyClean(info.frameUrl || info.pageUrl || (tab && tab.url), tabId);
-});
+  // Use the top-level page, not info.frameUrl: right-clicking inside an
+  // embedded frame (video, ad, widget) would otherwise copy the frame's URL.
+  if (info.menuItemId === MENU_PAGE) copyClean(info.pageUrl || (tab && tab.url), tabId);
+}
+
+chrome.contextMenus.onClicked.addListener(handleMenuClick);
 
 // ---------- Toolbar button ----------
 
