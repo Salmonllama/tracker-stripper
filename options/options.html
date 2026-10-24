@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tracker Stripper settings</title>
+<link rel="stylesheet" href="options.css">
+</head>
+<body>
+<main>
+  <header>
+    <img src="../icons/icon48.png" alt="" width="40" height="40">
+    <div>
+      <h1>Tracker Stripper</h1>
+      <p class="sub">Removes tracking tags like <code>utm_source</code>, <code>fbclid</code> and <code>si</code> from links.</p>
+    </div>
+  </header>
+
+  <section class="card">
+    <h2>Features</h2>
+
+    <label class="row">
+      <span class="text">
+        <strong>Clean links when copying</strong>
+        <small>Cleans URLs you copy with Ctrl+C, and links copied by a site's own "Copy link" or "Share" buttons.</small>
+      </span>
+      <input type="checkbox" id="copyIntercept" class="switch">
+    </label>
+
+    <label class="row">
+      <span class="text">
+        <strong>Right-click "Copy clean link"</strong>
+        <small>Adds "Copy clean link" when you right-click a link, and "Copy clean page link" elsewhere on a page.</small>
+      </span>
+      <input type="checkbox" id="contextMenu" class="switch">
+    </label>
+
+    <label class="row">
+      <span class="text">
+        <strong>Toolbar button</strong>
+        <small>Click the extension's icon to copy a clean link to the page you're on. When off, the icon opens this page.</small>
+      </span>
+      <input type="checkbox" id="toolbarButton" class="switch">
+    </label>
+
+    <label class="row">
+      <span class="text">
+        <strong>Clean links as you open them</strong>
+        <small>Strips tracking from a page's address before it loads, so the address bar (and anything you bookmark) stays clean.</small>
+      </span>
+      <input type="checkbox" id="navigation" class="switch">
+    </label>
+  </section>
+
+  <section class="card">
+    <h2>Extra parameters to strip</h2>
+    <p class="hint">Optional. Add any other parameter names you want removed everywhere, separated by spaces, commas or new lines.</p>
+    <textarea id="extraParams" rows="3" spellcheck="false" placeholder="e.g. ref_campaign, src"></textarea>
+    <div class="actions">
+      <button id="saveExtras" type="button">Save</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Try it</h2>
+    <p class="hint">Paste a link to see what it looks like after cleaning.</p>
+    <input id="testInput" type="url" spellcheck="false" placeholder="https://example.com/page?utm_source=newsletter&amp;id=42">
+    <output id="testOutput"></output>
+  </section>
+
+  <p class="status" id="status" role="status" aria-live="polite"></p>
+</main>
+<script src="../lib/cleaner.js"></script>
+<script src="options.js"></script>
+</body>
+</html>
